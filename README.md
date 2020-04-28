@@ -1,4 +1,4 @@
-# immunoSEQ2airr
+# immunoseq2airr
 
 ### v 1
 #### Jamie Heather, 2020, MGH
