@@ -13,7 +13,7 @@ import argparse
 import os
 
 __email__ = 'jheather@mgh.harvard.edu'
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __author__ = 'Jamie Heather'
 
 
@@ -66,7 +66,7 @@ def args():
                         help='Optional productivity filter. Only retain potentially productive rearrangements')
 
     parser.add_argument('-sa', '--strip_alleles', action='store_true', required=False,
-                        help='Optionally strip allele information from gene calls (e.g. TRBV5 not TRBV5\*01)')
+                        help='Optionally strip allele information from gene calls (e.g. TRBV5 not TRBV5*01)')
 
     parser.add_argument('-mf', '--motif_filter', action='store_true', required=False,
                         help='Optional motif filter. Discard TCRs with CDR3s not bound by C and F (or W for TRA)')
@@ -373,7 +373,7 @@ adaptive_v_convert = {'TRBV1-1': 'TRBV1',
                       }
 
 # TODO potentially infer parameter columns from headers (or even early rows)?
-    # Would help with rogue file versions, but would probably require knowing all the file formats in the first place
+# Would help with rogue file versions, but would probably require knowing all the file formats in the first place
 params = {'sequence_index': 0, 'cdr3_index': 1, 'abundance_index': 2, 'productivity': 38,
           'vMaxResolved': 5, 'dMaxResolved': 12, 'jMaxResolved': 19,
           # 'vFamilyName': 6, 'dFamilyName': 13, 'jFamilyName': 20,
