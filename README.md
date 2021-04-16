@@ -3,6 +3,8 @@
 ### v 1.1.0
 #### Jamie Heather, 2021, MGH
 
+[![DOI](https://zenodo.org/badge/258680195.svg)](https://zenodo.org/badge/latestdoi/258680195)
+
 This script takes **v2** data from Adaptive Biotech's immunoSEQ/immuneACCESS platform, and converts them into the standardised [AIRR Community rearrangement format](https://docs.airr-community.org/en/latest/) proposed in [Vander Heiden *et al.*](https://doi.org/10.3389/fimmu.2018.02206) The goal of this effort is to make data produced by [Adaptive Biotech](https://www.adaptivebiotech.com/) compatible with ongoing standardisation efforts, and increase data re-use and comparability. To that end, during the format conversion TCR gene names are also converted into their proper HUGO-approved IMGT equivalents[.](http://jamimmunology.blogspot.com/2018/09/the-problem-with-adaptive-tcr-data-nomenclature.html)
 
 As this is being done on the final output as provided in the '**v2**' export option, and not using any intermediate format, there will be a number of missing fields (e.g. any of the alignment descriptor fields required to be present by the standard). It is also only built for TCR sequence data currently, although it should be theoretically adaptable to immunoglobulins.
