@@ -1,8 +1,7 @@
 # immunoseq2airr
 
-### v 1
-#### Jamie Heather, 2020, MGH
-[![DOI](https://zenodo.org/badge/258680195.svg)](https://zenodo.org/badge/latestdoi/258680195)
+### v 1.1.0
+#### Jamie Heather, 2021, MGH
 
 This script takes **v2** data from Adaptive Biotech's immunoSEQ/immuneACCESS platform, and converts them into the standardised [AIRR Community rearrangement format](https://docs.airr-community.org/en/latest/) proposed in [Vander Heiden *et al.*](https://doi.org/10.3389/fimmu.2018.02206) The goal of this effort is to make data produced by [Adaptive Biotech](https://www.adaptivebiotech.com/) compatible with ongoing standardisation efforts, and increase data re-use and comparability. To that end, during the format conversion TCR gene names are also converted into their proper HUGO-approved IMGT equivalents[.](http://jamimmunology.blogspot.com/2018/09/the-problem-with-adaptive-tcr-data-nomenclature.html)
 
@@ -12,7 +11,25 @@ It currently also only runs on human TRA and TRB (alpha and beta) chain files, a
 
 Please note that I do not have any affiliation with Adaptive Biotech (beyond being an occasional customer). ImmunoSEQ® and immuneACCESS are the property of Adaptive Biotech (Seattle, US). I also do not presume to speak for the AIRR-seq community, and this script was not produced as part of their efforts - merely in line with them.
 
-The current version (v 1) runs in Python 2.7. This script doesn't use any packages that are likely to be absent from a typical installation. 
+This script doesn't use any packages that are likely to be absent from a typical installation. 
+
+### Arguments
+
+* `-i`: path to input v2 exported Adaptive data file (the only required option)
+* `-n`: name to use as prefix in the sequence_id field 
+* `-o`: output file name - if not provided the input filename with an added '-airr' will be used 
+* `-lz`: how many leading zeroes to use in the sequence_id field (default = 8)
+* `-z`: option to toggle on gzip compression of output file
+* `-or`: toggle on ignoring orphons (see below)
+* `-d`: prevent ambiguous D gene calls (see below)
+* `-nd`: prevent all D gene calls
+* `-c`: TCR chain (Alpha/A/TRA/a or Beta/B/TRB/b) (default = b)
+* `-a`: allow ambiguity in allele level calls (see below)
+* `-af`: abundance filter (float), to only keep rearrangements with a certain frequency
+* `-pf`: productivity filter, to only keep in-frame rearrangements
+* `-sa`: strip alleles, to keep only gene-level information
+* `-mf`: motif filter, to discard TCRs with CDR3 junctions not bound by C and F (or W for TRA)
+* `-p`: path to a tab-separated parameter file, if applying to a non-standard format (see below)
 
 ### Example usage
 
@@ -114,6 +131,39 @@ As we must when using the ```-a``` flag (see Cautions below), checking the outpu
 
 In my experience using the ```-a``` flag as default on newly downloaded experiments can be dangerous, as occasionally missing allele level information has been a symptom of another cryptically organised file format.
 
+#### Custom parameter files
+
+While this script aims to cover the largest breadth of files in v2 "format", there are still occasionally some that don't fit. For circumstances where this is the case, users can work out the appropriate column conversions from the datafile and supply this information to the script in the form of a tab-separated file via the `-p` flag. Use this option to give the path of a file containing rows with a tab separated entry relating to each of the necessary fields required to be found in an Adaptive file. For convenience, an example file has been included in this repo (`emerson-parameters.tsv`) which gives an example that can be used to convert the 'HIP' prefixed files in the large [Emerson et al. Adaptive dataset](http://dx.doi.org/10.21417/B7001Z), e.g.:
+
+
+```bash
+# Repeating the simple run...
+python immunoseq2airr.py -i HIP02805.tsv.gz -p emerson-parameters.tsv -a
+```
+
+Note that in order to cope with the Emerson data (which is quite far removed from the v2 standard) you have to use the `-a` option. ls
+
+
+The fields present in the parameter file are:
+
+| | |
+:-----:|:-----:
+sequence\_index|0
+cdr3\_index|1
+abundance\_index|4
+productivity|2
+vMaxResolved|10
+dMaxResolved|13
+jMaxResolved|16
+vGeneNameTies|30
+dGeneNameTies|33
+jGeneNameTies|36
+vGeneAlleleTies|31
+dGeneAlleleTies|34
+jGeneAlleleTies|37
+
+If you generate your own be sure that the file contains only the rows present in the example file, in the same order.
+
 ### Cautions
 
 Be warned that this script may throw unexpected errors, as it seems that there are inconsistencies between files from different experiments even if they are all exported as v2. You need to be particularly wary of using the ```-a``` 'allow_ambiguity' option, which effectively just takes whatever is in a given gene call cell even if it can't find an unambiguous entry. I suggest running the script twice in situations like this, once with and once without the ```-a``` flag; if it breaks on a very early line number, chances are that it's an uncatered-to file type. If it's a later line_count, then perhaps it's OK to proceed with allowing ambiguity (but still give your output data a once over to check!).
@@ -127,7 +177,3 @@ I've incorporated measures to cope with all of the file format heterogeneity tha
 These inconsistencies seem to be less frequent in more recently uploaded datasets, but YMMV. 
 
 Also note that Adaptive datasets are often liberal with what they determine to be an in-frame (i.e. potentially productive) rearrangement. This script requires there both to be an 'In' in the 'sequenceStatus' column and for there to be something present in the CDR3 field. However I've seen cases where there's an 'In' and the CDR3 field contains something that clearly just a partial CDR3 at best (e.g. 'YQLIW') which is extremely unlikely to represent a genuine fully-sequenced productive TCR, so post-processing sanity checks are advised.
-
-## Plans
-
-This script is likely to evolve. At the very least it should be updating to Python 3, now that Python 2 is discontinued. I will also strive to update it to cover additional 'v2' file formats, and potentially also to adapt to any changes to the AIRR Community Standard as it develops. 

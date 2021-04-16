@@ -13,7 +13,7 @@ import argparse
 import os
 
 __email__ = 'jheather@mgh.harvard.edu'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 __author__ = 'Jamie Heather'
 
 
@@ -70,6 +70,9 @@ def args():
 
     parser.add_argument('-mf', '--motif_filter', action='store_true', required=False,
                         help='Optional motif filter. Discard TCRs with CDR3s not bound by C and F (or W for TRA)')
+
+    parser.add_argument('-p', '--parameter_file', required=False, type=str,
+                        help='Optional path to file specifying non-standard parameters.')
 
     # TODO add option to specify output directory?
 
@@ -315,6 +318,45 @@ def strip_alleles(possible_alleles, gene_call):
     return ','.join(genes)
 
 
+def get_parameters(parameter_file):
+    """
+    :param parameter_file: if specified in command line arguments, a path to a TSV containing parameter specifications
+    :return: a dict of integers which correspond to the locations of different columns in a file of Adaptive TCR data
+    """
+
+    # TODO infer parameter columns from headers (or even early rows)?
+        # Would help with rogue file versions, but would probably require knowing all the file formats a priori
+
+    default_params = {'sequence_index': 0, 'cdr3_index': 1, 'abundance_index': 2, 'productivity': 38,
+              'vMaxResolved': 5, 'dMaxResolved': 12, 'jMaxResolved': 19,
+              # 'vFamilyName': 6, 'dFamilyName': 13, 'jFamilyName': 20,
+              'vGeneNameTies': 10, 'dGeneNameTies': 17, 'jGeneNameTies': 24,
+              'vGeneAlleleTies': 11, 'dGeneAlleleTies': 18, 'jGeneAlleleTies': 25}
+
+    if parameter_file:
+
+        custom_params = {}
+
+        for line in opener(parameter_file):
+            bits = line.rstrip().split('\t')
+            if len(bits) != 2:
+                raise IOError("Incorrect format detected in parameter file, needs 2 tab separated fields: " + line)
+            else:
+                try:
+                    custom_params[bits[0]] = int(bits[1])
+                except:
+                    raise IOError("Incorrect format detected in parameter file, need an integer index: " + line)
+
+        if custom_params.keys() == default_params.keys():
+            return custom_params
+
+        else:
+            raise IOError("Incorrect format detect in parameter file, ensure all fields present and correct.")
+
+    else:
+        return default_params
+
+
 # Need to account for the fact that Adaptive have taken it on themselves to rename the TCR genes
 # TODO add mappings for other loci to make applicable to all chains *******
 # TODO transfer to supplementary file to make it easier to change?
@@ -372,13 +414,6 @@ adaptive_v_convert = {'TRBV1-1': 'TRBV1',
                       'TRDV3-1': 'TRDV3'
                       }
 
-# TODO potentially infer parameter columns from headers (or even early rows)?
-# Would help with rogue file versions, but would probably require knowing all the file formats in the first place
-params = {'sequence_index': 0, 'cdr3_index': 1, 'abundance_index': 2, 'productivity': 38,
-          'vMaxResolved': 5, 'dMaxResolved': 12, 'jMaxResolved': 19,
-          # 'vFamilyName': 6, 'dFamilyName': 13, 'jFamilyName': 20,
-          'vGeneNameTies': 10, 'dGeneNameTies': 17, 'jGeneNameTies': 24,
-          'vGeneAlleleTies': 11, 'dGeneAlleleTies': 18, 'jGeneAlleleTies': 25}
 
 # AIRR-seq community format out headers
 out_headers = ['sequence_id', 'sequence', 'v_call', 'd_call', 'j_call', 'junction_aa', 'duplicate_count',
@@ -416,6 +451,10 @@ if __name__ == '__main__':
         out_opener = gzip.open
     else:
         out_opener = open
+
+    # Check if alternative Adaptive file parameters specified
+    params = get_parameters(input_args['parameter_file'])
+
 
     # Then run through input file and process
     with out_opener(output_name, 'w') as out_file:
