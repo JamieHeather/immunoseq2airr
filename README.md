@@ -1,6 +1,6 @@
 # immunoseq2airr
 
-### v 1.1.0
+### v 1.2.0
 #### Jamie Heather, 2021, MGH
 
 [![DOI](https://zenodo.org/badge/258680195.svg)](https://zenodo.org/badge/latestdoi/258680195)
@@ -31,6 +31,7 @@ This script doesn't use any packages that are likely to be absent from a typical
 * `-pf`: productivity filter, to only keep in-frame rearrangements
 * `-sa`: strip alleles, to keep only gene-level information
 * `-mf`: motif filter, to discard TCRs with CDR3 junctions not bound by C and F (or W for TRA)
+* `-jlf`: junction length filter, to discard TCRs with CDR3 junctions shorter than a given value
 * `-p`: path to a tab-separated parameter file, if applying to a non-standard format (see below)
 
 ### Example usage

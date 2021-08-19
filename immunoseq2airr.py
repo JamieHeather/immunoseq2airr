@@ -13,7 +13,7 @@ import argparse
 import os
 
 __email__ = 'jheather@mgh.harvard.edu'
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 __author__ = 'Jamie Heather'
 
 
@@ -71,33 +71,35 @@ def args():
     parser.add_argument('-mf', '--motif_filter', action='store_true', required=False,
                         help='Optional motif filter. Discard TCRs with CDR3s not bound by C and F (or W for TRA)')
 
+    parser.add_argument('-jlf', '--junction_len_filter', required=False, type=int, default=0,
+                        help='Optional junction length filter. Discard TCRs with CDR3 junctions shorter than this.')
+
     parser.add_argument('-p', '--parameter_file', required=False, type=str,
                         help='Optional path to file specifying non-standard parameters.')
-
-    # TODO add option to specify output directory?
 
     return parser.parse_args()
 
 
-def opener(in_file):
+def opener(file_path, open_mode):
     """
-    Gets the appropriate opener for an input file, and checks it exists
-    :param in_file: Path to a v2-formatted immunoSEQ/immuneACCESS file
-    :return: The file opened with the appropriate opening command
+    :param file_path: path to file to be opened
+    :param open_mode: str detailing mode by which to open the file (e.g. w/r/a)
+    :return: the appropriate file opening command (open or gzip.open)
+    :raises: IOERrror: if file to be read doesn't exist, or if an unexpected file extension is specified
     """
-    # First check file exists
-    if os.path.isfile(in_file):
 
-        # If it does, open it and return the opened file
-        if in_file.endswith('.gz'):
-            return gzip.open(in_file)
-        elif in_file.endswith('.tsv'):
-            return open(in_file)
-        else:
-            raise IOError("Error, unknown file extension: " + in_file)
+    if open_mode == 'r':
+        if not os.path.isfile(file_path):
+            raise IOError("Error, cannot locate file: " + file_path)
+
+    if file_path.endswith('.gz'):
+        return gzip.open(file_path, open_mode + 't')
+
+    elif file_path.endswith('.tsv'):
+        return open(file_path, open_mode)
 
     else:
-        raise IOError("Error, cannot locate file: " + in_file)
+        raise IOError("Error, unknown file extension: " + file_path)
 
 
 def get_name(in_file):
@@ -186,6 +188,11 @@ def convert_tcr(split_line, tcr_id):
             elif chain == 'TRA' and out_vals['junction_aa'][-1] not in ['F', 'W', 'C']:
                 return
 
+        # If the option to discard rearrangements lacking proper CDR3 motifs has been set, skip this entry if not C/F
+        if input_args['junction_len_filter'] != 0:
+            if len(out_vals['junction_aa']) < input_args['junction_len_filter']:
+                return
+
     else:
         out_vals['junction_aa'] = ''
         out_vals['productive'] = 'F'
@@ -193,8 +200,6 @@ def convert_tcr(split_line, tcr_id):
         # If the option to ignore non-productive rearrangements has been set, skip this row
         if input_args['productivity_filter']:
             return
-
-    # TODO add a CDR3 sanity length/motif filter?
 
     # If users wanted to they could infer the junction nt sequence, but I haven't, as it's redundant/not very useful
     out_vals['junction'] = ''
@@ -337,7 +342,7 @@ def get_parameters(parameter_file):
 
         custom_params = {}
 
-        for line in opener(parameter_file):
+        for line in opener(parameter_file, 'r'):
             bits = line.rstrip().split('\t')
             if len(bits) != 2:
                 raise IOError("Incorrect format detected in parameter file, needs 2 tab separated fields: " + line)
@@ -358,7 +363,7 @@ def get_parameters(parameter_file):
 
 
 # Need to account for the fact that Adaptive have taken it on themselves to rename the TCR genes
-# TODO add mappings for other loci to make applicable to all chains *******
+# TODO add mappings for other loci to make applicable to all chains
 # TODO transfer to supplementary file to make it easier to change?
 adaptive_v_convert = {'TRBV1-1': 'TRBV1',
                       'TRBV2-1': 'TRBV2',
@@ -448,21 +453,17 @@ if __name__ == '__main__':
     # Check for need to compress  # TODO ideally switch to a splittable compression format
     if input_args['compress']:
         output_name += '.gz'
-        out_opener = gzip.open
-    else:
-        out_opener = open
 
     # Check if alternative Adaptive file parameters specified
     params = get_parameters(input_args['parameter_file'])
 
-
     # Then run through input file and process
-    with out_opener(output_name, 'w') as out_file:
+    with opener(output_name, 'w') as out_file:
         line_count = 0
         out_file.write('\t'.join(out_headers) + '\n')
         out_str = ''
 
-        for line in opener(input_args['input']):
+        for line in opener(input_args['input'], 'r'):
             bits = line.rstrip().split('\t')
 
             # Take headers from very first line
